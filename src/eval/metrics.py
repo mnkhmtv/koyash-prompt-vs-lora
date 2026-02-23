@@ -2,11 +2,23 @@ import math
 from rouge_score import rouge_scorer
 
 
-def compute_perplexity(logprobs: list[dict]) -> float:
+def _extract_logprob(entry) -> float | None:
+    """Accept a dict, an object with .logprob, or a plain float."""
+    if isinstance(entry, dict):
+        return entry.get("logprob")
+    if hasattr(entry, "logprob"):
+        return entry.logprob
+    try:
+        return float(entry)
+    except (TypeError, ValueError):
+        return None
+
+
+def compute_perplexity(logprobs: list) -> float:
     if not logprobs:
         return float("nan")
 
-    log_probs = [entry["logprob"] for entry in logprobs if entry["logprob"] is not None]
+    log_probs = [v for entry in logprobs if (v := _extract_logprob(entry)) is not None]
     if not log_probs:
         return float("nan")
 
