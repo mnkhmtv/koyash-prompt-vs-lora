@@ -4,7 +4,7 @@ class BaselineKoyashLLM:
     def __init__(self,
                  system_prompt: str = "Ты - Koyash Ассистент", 
                  temperature: float = 0.7):
-        self.name = f"BaselineKoyashLLM: qwen2.5:32b"
+        self.name = f"BaselineKoyashLLM: qwen2.5:7b"
         self.system_prompt = system_prompt
         self.temperature = temperature
 
@@ -21,7 +21,7 @@ class BaselineKoyashLLM:
         """
 
         response = ollama.chat(
-            model="qwen2.5:32b",
+            model="qwen2.5:7b",
             messages=[
                 {"role": "system", "content": self.system_prompt},
                 {"role": "user",   "content": user_prompt},
