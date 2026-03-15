@@ -5,7 +5,7 @@ import pandas as pd
 
 from src.inference.baseline import BaselineKoyashLLM
 from src.inference.finetuned import FinetunedKoyashLLM
-from src.eval.metrics import compute_perplexity, compute_rouge_l
+from src.eval.metrics import compute_perplexity, compute_rouge_l, compute_bert_score
 
 BASE_DIR        = os.path.dirname(os.path.abspath(__file__))
 PREPROCESSED    = os.path.join(BASE_DIR, "data", "preprocessed")
@@ -73,15 +73,16 @@ def evaluate_model(model, eval_df: pd.DataFrame, output_csv: str) -> None:
             logprobs   = response.get("logprobs") or []
             perplexity = compute_perplexity(logprobs)
             rouge_l    = compute_rouge_l(answer, reference) if reference else float("nan")
-            print(f"  ✓ PPL={perplexity:.2f}, ROUGE-L={rouge_l:.4f}", flush=True)
+            bert_s     = compute_bert_score(answer, reference) if reference else float("nan")
+            print(f"  ✓ PPL={perplexity:.2f}, ROUGE-L={rouge_l:.4f}, BERTScore={bert_s:.4f}", flush=True)
 
         except TimeoutError:
             print(f"  ✗ TIMEOUT после {TIMEOUT_SEC}s — пропускаем", flush=True)
-            answer, perplexity, rouge_l = "TIMEOUT", float("nan"), float("nan")
+            answer, perplexity, rouge_l, bert_s = "TIMEOUT", float("nan"), float("nan"), float("nan")
 
         except Exception as e:
             print(f"  ✗ Ошибка: {e} — пропускаем", flush=True)
-            answer, perplexity, rouge_l = "ERROR", float("nan"), float("nan")
+            answer, perplexity, rouge_l, bert_s = "ERROR", float("nan"), float("nan"), float("nan")
 
         finally:
             signal.alarm(0)  # сбросить таймер
@@ -92,6 +93,7 @@ def evaluate_model(model, eval_df: pd.DataFrame, output_csv: str) -> None:
             "response":   answer,
             "perplexity": perplexity,
             "rouge_l":    rouge_l,
+            "bert_score": bert_s,
         })
 
 

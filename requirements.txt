@@ -72,3 +72,4 @@ urllib3==2.6.3
 wcwidth==0.6.0
 wheel==0.46.3
 rouge_score==0.1.2
+bert_score==0.3.13

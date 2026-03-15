@@ -1,5 +1,6 @@
 import math
 from rouge_score import rouge_scorer
+from bert_score import score as bert_score
 
 
 def _extract_logprob(entry) -> float | None:
@@ -30,3 +31,9 @@ def compute_rouge_l(hypothesis: str, reference: str) -> float:
     scorer = rouge_scorer.RougeScorer(["rougeL"], use_stemmer=False)
     scores = scorer.score(reference, hypothesis)
     return scores["rougeL"].fmeasure
+
+
+def compute_bert_score(hypothesis: str, reference: str, lang: str = "ru") -> float:
+    """F1 BERTScore между hypothesis и reference."""
+    _, _, f1 = bert_score([hypothesis], [reference], lang=lang, verbose=False)
+    return f1.item()
