@@ -27,6 +27,14 @@ def compute_perplexity(logprobs: list) -> float:
     return math.exp(avg_neg_log_prob)
 
 
+def compute_perplexity_hf(model, input_ids, attention_mask=None) -> float:
+    """Перплексия на HF causal-LM: exp(loss) при labels=input_ids."""
+    import torch
+    with torch.no_grad(), torch.autocast("cuda"):
+        out = model(input_ids, attention_mask=attention_mask, labels=input_ids)
+    return math.exp(out.loss.item())
+
+
 def compute_rouge_l(hypothesis: str, reference: str) -> float:
     scorer = rouge_scorer.RougeScorer(["rougeL"], use_stemmer=False)
     scores = scorer.score(reference, hypothesis)

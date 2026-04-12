@@ -9,24 +9,15 @@ from src.eval.metrics import compute_perplexity, compute_rouge_l, compute_bert_s
 
 BASE_DIR        = os.path.dirname(os.path.abspath(__file__))
 PREPROCESSED    = os.path.join(BASE_DIR, "data", "preprocessed")
-EVAL_CSV        = os.path.join(PREPROCESSED, "metrics_eval.csv")
-SYSTEM_PROMPT   = os.path.join(PREPROCESSED, "system_prompt.txt")
+EVAL_JSONL      = os.path.join(PREPROCESSED, "test.jsonl")
 OUTPUT_CSV      = "metrics_results.csv"
 TIMEOUT_SEC     = 180  # 3 минуты
 
 
-def load_system_prompt() -> str:
-    try:
-        with open(SYSTEM_PROMPT, encoding="utf-8") as f:
-            return f.read()
-    except Exception:
-        return "Ты Koyash Ассистент"
-
-
-def build_models(system_prompt: str, temperature: float = 0.3) -> list:
+def build_models(temperature: float = 0.3) -> list:
     return [
-        BaselineKoyashLLM(system_prompt=system_prompt, temperature=temperature),
-        # FinetunedKoyashLLM(system_prompt=system_prompt, temperature=temperature),
+        BaselineKoyashLLM(temperature=temperature),
+        # FinetunedKoyashLLM(temperature=temperature),
     ]
 
 
@@ -49,10 +40,11 @@ def evaluate_model(model, eval_df: pd.DataFrame, output_csv: str) -> None:
     done_ids = load_done_ids(output_csv, model.name)
     total    = len(eval_df)
 
-    for i, (_, row) in enumerate(eval_df.iterrows(), 1):
-        sample_id   = str(row["id"])
-        user_prompt = row["prompt"]
-        reference   = str(row.get("response", ""))
+    for i, (idx, row) in enumerate(eval_df.iterrows(), 1):
+        sample_id    = str(idx)
+        user_prompt  = row["prompt"]
+        system_prompt = row["system_prompt"]
+        reference    = str(row.get("ideal_response", ""))
 
         if sample_id in done_ids:
             print(f"[{model.name}] ({i}/{total}) id={sample_id} — пропуск (уже есть)", flush=True)
@@ -68,7 +60,7 @@ def evaluate_model(model, eval_df: pd.DataFrame, output_csv: str) -> None:
         signal.alarm(TIMEOUT_SEC)
 
         try:
-            response   = model.get_response(user_prompt)
+            response   = model.get_response(user_prompt, system_prompt=system_prompt)
             answer     = model.get_answer(response)
             logprobs   = response.get("logprobs") or []
             perplexity = compute_perplexity(logprobs)
@@ -98,12 +90,11 @@ def evaluate_model(model, eval_df: pd.DataFrame, output_csv: str) -> None:
 
 
 def main():
-    print(f"Loading eval dataset from: {EVAL_CSV}")
-    eval_df = pd.read_csv(EVAL_CSV, skipinitialspace=True)
+    print(f"Loading eval dataset from: {EVAL_JSONL}")
+    eval_df = pd.read_json(EVAL_JSONL, lines=True)
     print(f"Total samples: {len(eval_df)}")
 
-    system_prompt = load_system_prompt()
-    models        = build_models(system_prompt)
+    models = build_models()
 
     for model_idx, model in enumerate(models, 1):
         print(f"\n[{model_idx}/{len(models)}] Model: {model.name}")

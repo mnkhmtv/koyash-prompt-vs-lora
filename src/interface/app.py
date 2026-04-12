@@ -3,33 +3,35 @@ import os
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
+import json
 import streamlit as st
 
 from src.inference.baseline import BaselineKoyashLLM
 from src.inference.finetuned import FinetunedKoyashLLM
 from src.eval.metrics import compute_perplexity, compute_rouge_l
 
-def build_model_list(system_prompt: str, temperature: float) -> list:
+def build_model_list(temperature: float) -> list:
     return [
-        BaselineKoyashLLM(system_prompt=system_prompt, temperature=temperature),
-        FinetunedKoyashLLM(system_prompt=system_prompt, temperature=temperature),
+        BaselineKoyashLLM(temperature=temperature),
+        FinetunedKoyashLLM(temperature=temperature),
     ]
 
 
-def load_system_prompt() -> str:
-    prompt_path = os.path.join(
-        os.path.dirname(__file__), '..', '..', 'data', 'preprocessed', 'system_prompt.txt'
+def load_default_system_prompt() -> str:
+    path = os.path.join(
+        os.path.dirname(__file__), '..', '..', 'data', 'preprocessed', 'dataset.jsonl'
     )
-    if os.path.exists(prompt_path):
-        with open(prompt_path, encoding='utf-8') as f:
-            return f.read()
+    if os.path.exists(path):
+        with open(path, encoding='utf-8') as f:
+            first = f.readline().strip()
+            if first:
+                return json.loads(first).get("system_prompt", "Ты Koyash Ассистент")
     return "Ты Koyash Ассистент"
 
 st.set_page_config(page_title="Koyash AI", page_icon="🌸", layout="wide")
 st.title("🌸 Koyash AI — косметический консультант")
 
-system_prompt = load_system_prompt()
-model_names = [m.name for m in build_model_list(system_prompt, 0.3)]
+model_names = [m.name for m in build_model_list(0.3)]
 
 with st.sidebar:
     st.header("⚙️ Настройки")
@@ -40,9 +42,10 @@ with st.sidebar:
 
     temperature = st.slider("Temperature", min_value=0.0, max_value=2.0, value=0.3, step=0.05)
 
-models = build_model_list(system_prompt=system_prompt, temperature=temperature)
+models = build_model_list(temperature=temperature)
 selected_model = next(m for m in models if m.name == selected_name)
 
+system_prompt = st.text_area("System prompt:", value=load_default_system_prompt(), height=200)
 user_input = st.text_area("Введите запрос:", height=150, placeholder="Опишите свой тип кожи, проблемы и бюджет...")
 reference_input = st.text_area("Эталонный ответ для ROUGE-L (опционально):", height=80, placeholder="Вставьте экспертный ответ для сравнения...")
 
@@ -52,7 +55,7 @@ if st.button("✨ Получить рекомендацию", type="primary"):
     else:
         with st.spinner(f"Думаю ({selected_model.name})..."):
             try:
-                response = selected_model.get_response(user_input)
+                response = selected_model.get_response(user_input, system_prompt=system_prompt)
                 answer = selected_model.get_answer(response)
                 st.markdown("### 💬 Ответ")
                 st.markdown(answer)

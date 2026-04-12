@@ -1,5 +1,11 @@
 # koyash-prompt-vs-lora
 
+for innodatahub
+```
+!git clone https://github.com/mnkhmtv/koyash-prompt-vs-lora.git
+%cd koyash-prompt-vs-lora
+```
+
 to launch you have to install ollama and launch it:
 ```bash
 brew install ollama

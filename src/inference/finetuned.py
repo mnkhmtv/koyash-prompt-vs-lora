@@ -10,7 +10,7 @@ class FinetunedKoyashLLM:
         self.temperature = temperature
         self.name = "FinetunedKoyashLLM: qwen2.5:32b"
 
-    def get_response(self, user_prompt: str, temperature: float = None) -> ollama.ChatResponse:
+    def get_response(self, user_prompt: str, temperature: float = None, system_prompt: str = None) -> ollama.ChatResponse:
         """
         Get a response from the model based on the system and user prompts.
 
@@ -25,7 +25,7 @@ class FinetunedKoyashLLM:
         response = ollama.chat(
             model="qwen2.5:32b",
             messages=[
-                {"role": "system", "content": self.system_prompt},
+                {"role": "system", "content": system_prompt if system_prompt is not None else self.system_prompt},
                 {"role": "user",   "content": user_prompt},
             ],
             options={"temperature": temperature if temperature is not None else self.temperature},

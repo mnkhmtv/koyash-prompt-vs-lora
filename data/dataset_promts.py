@@ -1,5 +1,9 @@
+import random
 import pandas as pd
 import json
+
+SEED = 42
+TEST_SIZE = 10
 
 consultations = pd.read_csv("data/raw/consultations_seed.csv")
 products = pd.read_csv("data/raw/product_catalog.csv")
@@ -56,10 +60,21 @@ for _, row in consultations.iterrows():
         "ideal_response": row["full_reasoning"]
     })
 
-# Сохраняем в jsonl
-with open("data/preprocessed/dataset.jsonl", "w", encoding="utf-8") as f:
-    for r in rows:
-        f.write(json.dumps(r, ensure_ascii=False) + "\n")
+rng = random.Random(SEED)
+indices = list(range(len(rows)))
+rng.shuffle(indices)
+test_idx = set(indices[:TEST_SIZE])
 
-print(f"Готово: {len(rows)} строк")
+train_rows = [r for i, r in enumerate(rows) if i not in test_idx]
+test_rows  = [r for i, r in enumerate(rows) if i in test_idx]
+
+def dump(path, data):
+    with open(path, "w", encoding="utf-8") as f:
+        for r in data:
+            f.write(json.dumps(r, ensure_ascii=False) + "\n")
+
+dump("data/preprocessed/train.jsonl", train_rows)
+dump("data/preprocessed/test.jsonl", test_rows)
+
+print(f"Готово: train={len(train_rows)}, test={len(test_rows)}")
 print(f"Пример длины промпта: ~{len(rows[0]['system_prompt'].split())} слов")
