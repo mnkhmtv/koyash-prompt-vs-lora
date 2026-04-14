@@ -1,7 +1,7 @@
-.PHONY: help venv install freeze clean run interface
+.PHONY: help venv install freeze clean run interface build-finetuned
 
 VENV_DIR := .venv
-PYTHON := python3
+PYTHON := python3.12
 VENV_PYTHON := $(VENV_DIR)/bin/python
 VENV_PIP := $(VENV_DIR)/bin/pip
 REQUIREMENTS := requirements.txt
@@ -24,3 +24,8 @@ clean:
 
 interface: install
 	$(VENV_DIR)/bin/streamlit run src/interface/app.py
+
+build-finetuned: install
+	$(VENV_PYTHON) scripts/merge_lora.py
+	bash scripts/build_gguf.sh
+	cd model && ollama create koyash-finetuned -f Modelfile

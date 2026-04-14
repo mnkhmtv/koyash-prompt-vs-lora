@@ -17,7 +17,7 @@ TIMEOUT_SEC     = 180  # 3 минуты
 def build_models(temperature: float = 0.3) -> list:
     return [
         BaselineKoyashLLM(temperature=temperature),
-        # FinetunedKoyashLLM(temperature=temperature),
+        FinetunedKoyashLLM(temperature=temperature),
     ]
 
 
@@ -25,8 +25,11 @@ def load_done_ids(output_csv: str, model_name: str) -> set:
     """Возвращает set id, которые уже записаны для данной модели."""
     if not os.path.exists(output_csv):
         return set()
-    df = pd.read_csv(output_csv)
-    return set(df.loc[df["model_name"] == model_name, "id"].astype(str))
+    try:
+        df = pd.read_csv(output_csv)
+        return set(df.loc[df["model_name"] == model_name, "id"].astype(str))
+    except pd.errors.EmptyDataError:
+        return set()
 
 
 def append_row(output_csv: str, row: dict) -> None:
